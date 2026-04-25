@@ -144,7 +144,7 @@ func (r *Runner) runTable(ctx context.Context, mysqlDB *sql.DB, pgPool *pgxpool.
 		default:
 		}
 
-		rows, lastID, err := r.readBatch(ctx, mysqlDB, plan, state.LastCheckpointID)
+		rows, lastID, err := r.readBatch(ctx, mysqlDB, plan, state.LastCheckpointID, state.ReadRows)
 		if err != nil {
 			result.Err = err
 			r.emitTableFailed(table, err)
@@ -248,9 +248,13 @@ func (r *Runner) buildPlan(ctx context.Context, mysqlDB *sql.DB, pgPool *pgxpool
 		return nil, nil, fmt.Errorf("postgresql 表不存在或没有字段: %s", table.TargetTable)
 	}
 	cp := r.cfg.TableCheckpoint(table)
-	state, err := newCheckpointStore(r.cfg.Job.Name, cp).load(table.SourceTable)
-	if err != nil {
-		return nil, nil, err
+	var state *checkpointState
+	if cp.Enabled {
+		var err error
+		state, err = newCheckpointStore(r.cfg.Job.Name, cp).load(table.SourceTable)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 	columns, insertTargets, err := r.buildColumns(table, sourceColumns, targetColumns)
 	if err != nil {
@@ -357,7 +361,7 @@ func (r *Runner) missingColumnAction(table string, source string, column config.
 	}
 }
 
-func (r *Runner) readBatch(ctx context.Context, mysqlDB *sql.DB, plan *tablePlan, lastID any) ([]map[string]any, any, error) {
+func (r *Runner) readBatch(ctx context.Context, mysqlDB *sql.DB, plan *tablePlan, lastID any, offset int64) ([]map[string]any, any, error) {
 	selectColumns := make([]string, 0, len(plan.Columns))
 	seen := map[string]bool{}
 	for _, column := range plan.Columns {
@@ -396,6 +400,10 @@ func (r *Runner) readBatch(ctx context.Context, mysqlDB *sql.DB, plan *tablePlan
 	}
 	query := fmt.Sprintf("select %s from %s%s order by %s asc limit ?", strings.Join(selectColumns, ", "), quoteMySQLIdent(plan.Config.SourceTable), whereSQL, quoteMySQLIdent(orderColumn))
 	args = append(args, r.cfg.Job.BatchSize)
+	if !plan.Checkpoint.Enabled {
+		query += " offset ?"
+		args = append(args, offset)
+	}
 	r.emitSQLStarted("mysql", plan.Config.SourceTable, query, args)
 	startedAt := time.Now()
 	rows, err := mysqlDB.QueryContext(ctx, query, args...)

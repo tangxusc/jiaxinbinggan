@@ -3,6 +3,7 @@ module jiaxinbinggan
 go 1.26
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/jackc/pgx/v5 v5.7.6
 	gopkg.in/yaml.v3 v3.0.1
