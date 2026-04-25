@@ -1,0 +1,38 @@
+﻿mysql:
+  host: 192.168.102.164
+  port: 3306
+  database: guangzhou_baiyun
+  username: root
+  password: '1q2w!Q@W'
+
+postgresql:
+  host: 192.168.102.164
+  port: 5435
+  database: fupan
+  schema: public
+  username: postgres
+  password: '1q2w!Q@W'
+
+job:
+  name: mysql-to-pg
+  batchSize: 1
+  concurrency: 1
+  onMissingSourceColumn: useDefault
+  onWriteConflict: ignore
+  dryRun: true
+  debug: true
+  countTotalRows: false
+  failFast: false
+  view:
+    enabled: false
+    refreshIntervalMs: 500
+  checkpoint:
+    enabled: false
+    column: id
+    order: asc
+    storage: ./checkpoint
+    fixedUpperBound: true
+  tables:
+    - sourceTable: user
+      targetTable: user
+

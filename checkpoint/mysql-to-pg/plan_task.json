@@ -1,0 +1,14 @@
+{
+  "jobName": "mysql-to-pg",
+  "sourceTable": "plan_task",
+  "targetTable": "plan_task",
+  "checkpointColumn": "id",
+  "lastCheckpointId": 2047627621205196801,
+  "maxId": 2047627621205196801,
+  "status": "completed",
+  "updatedAt": "2026-04-24T19:05:28+08:00",
+  "readRows": 311970,
+  "writtenRows": 311970,
+  "skippedRows": 0,
+  "failedRows": 0
+}
